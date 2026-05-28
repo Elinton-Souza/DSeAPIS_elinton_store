@@ -152,4 +152,50 @@ router.post("/", async (req, res) => {
     }
 })
 
+// DELETE /vendas/:id - Devolução (transação reversa)
+router.delete("/:id", async (req, res) => {
+    const { id } = req.params
+    const vendaId = Number(id)
+
+    try {
+        const venda = await prisma.venda.findUnique({
+            where: { id: vendaId },
+            include: { itens: true }
+        })
+
+        if (!venda) {
+            res.status(404).json({ error: "Venda não encontrada." })
+            return
+        }
+
+        await prisma.$transaction(async (tx) => {
+            for (const item of venda.itens) {
+                await tx.produto.update({
+                    where: { id: item.produtoId },
+                    data: { qtd: { increment: item.qtd } }
+                })
+            }
+
+            await tx.cliente.update({
+                where: { id: venda.clienteId },
+                data: { gastos: { decrement: Number(venda.totalNF) } }
+            })
+
+            await tx.itemVenda.deleteMany({
+                where: { vendaId: vendaId }
+            })
+
+            await tx.venda.delete({
+                where: { id: vendaId }
+            })
+        })
+
+        res.status(200).json({ message: "Venda devolvida com sucesso." })
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ error: "Erro ao devolver venda." })
+    }
+})
+
+        
 export default router
