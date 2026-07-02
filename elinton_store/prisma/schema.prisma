@@ -32,6 +32,8 @@ model Cliente {
   cpf      String    @db.VarChar(14) @unique
   email    String    @db.VarChar(80)
   gastos   Decimal   @db.Decimal(10,2) @default(0)
+  deleted  Boolean   @default(false)          
+  deletedAt DateTime?                          
   vendas   Venda[]
   @@map("clientes")
 }
@@ -55,4 +57,27 @@ model ItemVenda {
   qtd         Int        @db.SmallInt
   preco       Decimal    @db.Decimal(9,2)
   @@map("itens_venda")
+}
+
+model Usuario {
+  id                   Int       @id @default(autoincrement())
+  nome                 String    @db.VarChar(60)
+  email                String    @db.VarChar(80) @unique
+  senha                String    @db.VarChar(200)
+  ultimoLogin          DateTime?
+  tentativasInvalidas  Int       @default(0)
+  bloqueado            Boolean   @default(false)
+  codigoRecuperacao    String?   @db.VarChar(4)
+  logs                 Log[]
+  @@map("usuarios")
+}
+
+model Log {
+  id           Int      @id @default(autoincrement())
+  descricao    String   @db.VarChar(60)
+  complemento  String?  @db.VarChar(200)
+  createdAt    DateTime @default(now())
+  usuarioId    Int
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id])
+  @@map("logs")
 }
