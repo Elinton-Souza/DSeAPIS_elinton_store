@@ -138,6 +138,14 @@ router.post("/", verificaToken, async (req, res) => {
       })
     })
 
+      await prisma.log.create({
+    data: {
+      usuarioId: req.userId!,
+      descricao: "VENDA_REGISTRADA",
+      complemento: `Venda ${resultado?.id} - Cliente ${clienteId} - Total R$ ${totalNF.toFixed(2)}`
+    }
+  })
+
     res.status(201).json(resultado)
   } catch (error) {
     console.error(error)
@@ -181,6 +189,14 @@ router.delete("/:id", verificaToken, async (req, res) => {
       await tx.venda.delete({
         where: { id: vendaId }
       })
+    })
+
+    await prisma.log.create({
+      data: {
+        usuarioId: req.userId!,
+        descricao: "VENDA_DEVOLVIDA",
+        complemento: `Venda ${vendaId} devolvida - Total R$ ${Number(venda.totalNF).toFixed(2)}`
+      }
     })
 
     res.status(200).json({ message: "Venda devolvida com sucesso." })
